@@ -22,7 +22,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/aditya-blanko/Terraform-Jenkins-Docker-DotNet.git'
+                git branch: 'main', url: 'https://github.com/aditya-blanko/Terraform-Jenkins-Docker-Dotnet.git'
             }
         }
 
