@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        ACR_NAME             = 'kubernetes-acr-04082003'
-        ACR_LOGIN_SERVER     = 'kubernetes-acr-04082003.azurecr.io'
+        ACR_NAME             = 'kubernetesacr04082003'
+        ACR_LOGIN_SERVER     = 'kubernetesacr04082003.azurecr.io'
         IMAGE_NAME           = 'kubernetes04082003'
         RESOURCE_GROUP       = 'rg-aks-acr'
-        AKS_CLUSTER          = 'my-cluster-04082003'
+        AKS_CLUSTER          = 'mycluster04082003'
         AZURE_CREDENTIALS_ID = 'azure-service-principal-kubernetes'
         AZURE_CLI_PATH       = 'C:/Program Files/Microsoft SDKs/Azure/CLI2/wbin'
         SYSTEM_PATH          = 'C:/Windows/System32'
