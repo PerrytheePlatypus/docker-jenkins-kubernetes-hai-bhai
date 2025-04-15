@@ -26,12 +26,15 @@ pipeline {
         stage('Terraform Init & Apply') {
             steps {
                 dir('terraform') {
-                    bat '''
+                     withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]){
+                         bat '''
                         set PATH=%AZURE_CLI_PATH%;%SYSTEM_PATH%;%TERRAFORM_PATH%;%PATH%
                         terraform init
                         terraform plan
                         terraform apply -auto-approve
                     '''
+                     }
+                    
                 }
             }
         }
