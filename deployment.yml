@@ -16,7 +16,7 @@ spec:
         - name: dotnet-api
           image: kubernetes-acr-04082003.azurecr.io/kubernetes04082003:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 8081
 ---
 apiVersion: v1
 kind: Service
@@ -28,5 +28,5 @@ spec:
     app: dotnet-api
   ports:
   - protocol: TCP
-    port: 80
-    targetPort: 8080
+    port: 8081
+    targetPort: 8081
