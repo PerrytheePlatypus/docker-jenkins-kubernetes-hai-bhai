@@ -24,7 +24,7 @@ pipeline {
                             set PATH=%AZURE_CLI_PATH%;%SYSTEM_PATH%;%TERRAFORM_PATH%;%PATH%
                             terraform init
                             terraform plan -out=tfplan
-                            terraform apply -auto-approve
+                            terraform apply -auto-approve tfplan
                         '''
                     }
                 }
