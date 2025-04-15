@@ -1,30 +1,70 @@
+
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = ">=3.0.0"
+    }
+  }
+  required_version = ">=1.0.0"
+}
+
 provider "azurerm" {
+  subscription_id = "bf9c4a23-fb6a-43a2-a6c4-9e224b69b5ac"
+  tenant_id       = "ccb92876-d4ba-4bc7-b967-c9177170db6d"
   features {}
-  subscription_id = "bf9c4a23-fb6a-43a2-a6c4-9e224b69b5ac" 
 }
 
-resource "azurerm_resource_group" "main" {
-  name     = "rg-aks-acr"
-  location = "East US 2"
+# Variables
+variable "location" {
+  default = "East US 2"
 }
 
+variable "resource_group_name" {
+  default = "rg-aks-acr"
+}
+
+variable "acr_name" {
+  default = "kubernetesacr04082003" 
+}
+
+variable "aks_cluster_name" {
+  default = "mycluster04082003"
+}
+
+variable "dns_prefix" {
+  default = "myakscluster"
+}
+
+variable "node_count" {
+  default = 2
+}
+
+# Resource Group
+resource "azurerm_resource_group" "rg" {
+  name     = var.resource_group_name
+  location = var.location
+}
+
+# Azure Container Registry (ACR)
 resource "azurerm_container_registry" "acr" {
-  name                = "kubernetesacr04082003" 
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
+  name                = var.acr_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
   sku                 = "Basic"
   admin_enabled       = true
 }
 
+# Azure Kubernetes Service (AKS)
 resource "azurerm_kubernetes_cluster" "aks" {
-  name                = "mycluster04082003"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  dns_prefix          = "myaksdns"
+  name                = var.aks_cluster_name
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  dns_prefix          = var.dns_prefix
 
   default_node_pool {
     name       = "default"
-    node_count = 2
+    node_count = var.node_count
     vm_size    = "Standard_DS2_v2"
   }
 
@@ -33,19 +73,36 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 
   network_profile {
-    network_plugin = "azure"
+    network_plugin    = "azure"
     load_balancer_sku = "standard"
   }
 
+  tags = {
+    Environment = "Development"
+  }
 }
 
+# Role assignment to allow AKS to pull from ACR
 resource "azurerm_role_assignment" "aks_acr_pull" {
-  principal_id                     = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
-  role_definition_name             = "AcrPull"
-  scope                            = azurerm_container_registry.acr.id
-  skip_service_principal_aad_check = true
+  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+  role_definition_name = "AcrPull"
+  scope                = azurerm_container_registry.acr.id
 
+ 
   depends_on = [
     azurerm_kubernetes_cluster.aks
   ]
+}
+
+# Outputs
+output "resource_group_name" {
+  value = azurerm_resource_group.rg.name
+}
+
+output "acr_login_server" {
+  value = azurerm_container_registry.acr.login_server
+}
+
+output "aks_cluster_name" {
+  value = azurerm_kubernetes_cluster.aks.name
 }
