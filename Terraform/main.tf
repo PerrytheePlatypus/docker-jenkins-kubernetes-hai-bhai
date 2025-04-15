@@ -44,4 +44,8 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   role_definition_name             = "AcrPull"
   scope                            = azurerm_container_registry.acr.id
   skip_service_principal_aad_check = true
+
+  depends_on = [
+    azurerm_kubernetes_cluster.aks
+  ]
 }
