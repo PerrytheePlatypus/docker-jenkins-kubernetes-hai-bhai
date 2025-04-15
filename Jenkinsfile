@@ -15,6 +15,14 @@ pipeline {
 
     stages {
 
+        stage('Azure Login') {
+           steps {
+             bat 'set PATH=%AZURE_CLI_PATH%;%SYSTEM_PATH%;%TERRAFORM_PATH%;%PATH%'
+             bat 'az login --service-principal -u %ARM_CLIENT_ID% -p %ARM_CLIENT_SECRET% --tenant %ARM_TENANT_ID%'
+           }
+     } 
+ 
+
         stage('Terraform Init & Apply') {
             steps {
                 dir('terraform') {
