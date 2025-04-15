@@ -2,84 +2,111 @@ pipeline {
     agent any
 
     environment {
-        ACR_NAME             = 'kubernetesacr04082003'
-        ACR_LOGIN_SERVER     = 'kubernetesacr04082003.azurecr.io'
-        IMAGE_NAME           = 'kubernetes04082003'
-        RESOURCE_GROUP       = 'rg-aks-acr'
-        AKS_CLUSTER          = 'mycluster04082003'
+        DOTNET_PATH = 'C:\\Program Files\\dotnet'
+        DOCKER_PATH = 'C:\\Program Files\\Docker\\Docker\\resources\\bin'
+        TERRAFORM_PATH = 'C:\\Users\\window 10\\Downloads\\terraform_1.11.3_windows_386'
+        AZURE_CLI_PATH = 'C:\\Program Files\\Microsoft SDKs\\Azure\\CLI2\\wbin'
+        
+        PATH = "${DOTNET_PATH};${DOCKER_PATH};${TERRAFORM_PATH};${AZURE_CLI_PATH};${PATH}"
+        
+        ACR_NAME = 'kubernetesacr04082003'
         AZURE_CREDENTIALS_ID = 'azure-service-principal-kubernetes'
-        AZURE_CLI_PATH       = 'C:/Program Files/Microsoft SDKs/Azure/CLI2/wbin'
-        SYSTEM_PATH          = 'C:/Windows/System32'
-        TERRAFORM_PATH       = 'C:/Users/window 10/Downloads/terraform_1.11.3_windows_386'
+        ACR_LOGIN_SERVER = "${ACR_NAME}.azurecr.io"
+        IMAGE_NAME = 'kubernetes04082003'
+        IMAGE_TAG = 'latest'
+        RESOURCE_GROUP = 'rg-aks-acr'
+        AKS_CLUSTER = 'mycluster04082003'
+        TF_WORKING_DIR = 'Terraform'
     }
 
     stages {
-
-
-        stage('Terraform Init & Apply') {
+        stage('Checkout') {
             steps {
-                dir('Terraform') {
-                    withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
-                        bat '''
-                            set PATH=%AZURE_CLI_PATH%;%SYSTEM_PATH%;%TERRAFORM_PATH%;%PATH%
-                            terraform init
-                            terraform plan -out=tfplan
-                            terraform apply -auto-approve tfplan
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Login to ACR') {
-            steps {
-                bat '''
-                    set PATH=%AZURE_CLI_PATH%;%SYSTEM_PATH%;%TERRAFORM_PATH%;%PATH%
-                    az acr login --name %ACR_NAME%
-                '''
+                git branch: 'main', url: 'https://github.com/aditya-blanko/Terraform-Jenkins-Docker-DotNet.git'
             }
         }
 
         stage('Build .NET App') {
             steps {
-                bat 'dotnet publish WebApiJenkins/WebApiJenkins.csproj -c Release -o out'
-            }
-        }
-    
-        stage('Build Docker Image') {
-            steps {
-                bat '''
-                    set PATH=%AZURE_CLI_PATH%;%SYSTEM_PATH%;%TERRAFORM_PATH%;%PATH%
-                    docker build -t %ACR_LOGIN_SERVER%/%IMAGE_NAME%:latest .
-                '''
+                bat 'dotnet publish DotNetWebAPP\\DotNetWebAPP.csproj -c Release -o out'
             }
         }
 
-        stage('Push Image to ACR') {
+        stage('Build Docker Image') {
             steps {
-                bat '''
-                    set PATH=%AZURE_CLI_PATH%;%SYSTEM_PATH%;%TERRAFORM_PATH%;%PATH%
-                    docker push %ACR_LOGIN_SERVER%/%IMAGE_NAME%:latest
-                '''
+                bat "docker build -t %ACR_LOGIN_SERVER%/%IMAGE_NAME%:%IMAGE_TAG% -f DotNetWebAPP/Dockerfile DotNetWebAPP"
+            }
+        }
+
+       stage('Terraform Init') {
+            steps {
+                withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
+                    bat """
+                    echo "Navigating to Terraform Directory: %TF_WORKING_DIR%"
+                    cd %TF_WORKING_DIR%
+                    echo "Initializing Terraform..."
+                    terraform init
+                    """
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
+                    bat """
+                    echo "Navigating to Terraform Directory: %TF_WORKING_DIR%"
+                    cd %TF_WORKING_DIR%
+                    terraform plan -out=tfplan
+                    """
+                }
+            }
+        }
+
+
+        stage('Terraform Apply') {
+    steps {
+        withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
+            bat """
+            echo "Navigating to Terraform Directory: %TF_WORKING_DIR%"
+            cd %TF_WORKING_DIR%
+            echo "Applying Terraform Plan..."
+            terraform apply -auto-approve tfplan
+            """
+        }
+    }
+}
+        stage('Login to ACR') {
+            steps {
+                bat "az acr login --name %ACR_NAME%"
+            }
+        }
+
+        stage('Push Docker Image to ACR') {
+            steps {
+                bat "docker push %ACR_LOGIN_SERVER%/%IMAGE_NAME%:%IMAGE_TAG%"
             }
         }
 
         stage('Get AKS Credentials') {
             steps {
-                bat '''
-                    set PATH=%AZURE_CLI_PATH%;%SYSTEM_PATH%;%TERRAFORM_PATH%;%PATH%
-                    az aks get-credentials --resource-group %RESOURCE_GROUP% --name %AKS_CLUSTER% --overwrite-existing
-                '''
+                bat "az aks get-credentials --resource-group %RESOURCE_GROUP% --name %AKS_CLUSTER% --overwrite-existing"
             }
         }
 
         stage('Deploy to AKS') {
             steps {
-                bat '''
-                    set PATH=%AZURE_CLI_PATH%;%SYSTEM_PATH%;%TERRAFORM_PATH%;%PATH%
-                    kubectl apply -f deployment.yml
-                '''
+                bat "kubectl apply -f deployment.yml"
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'All stages completed successfully!'
+        }
+        failure {
+            echo 'Build failed.'
         }
     }
 }
