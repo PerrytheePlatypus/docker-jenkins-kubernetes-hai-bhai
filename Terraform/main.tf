@@ -9,7 +9,7 @@ resource "azurerm_resource_group" "main" {
 }
 
 resource "azurerm_container_registry" "acr" {
-  name                = "kubernetes-acr-04082003" 
+  name                = "kubernetesacr04082003" 
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   sku                 = "Basic"
@@ -17,7 +17,7 @@ resource "azurerm_container_registry" "acr" {
 }
 
 resource "azurerm_kubernetes_cluster" "aks" {
-  name                = "my-cluster-04082003"
+  name                = "mycluster04082003"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   dns_prefix          = "myaksdns"
