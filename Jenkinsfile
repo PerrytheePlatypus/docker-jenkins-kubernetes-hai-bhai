@@ -15,28 +15,13 @@ pipeline {
 
     stages {
 
-        stage('Azure Login') {
-            steps {
-                bat 'az login --service-principal -u 548e5e7d-b2db-4ffd-822e-46a0a4191a11 -p SF18Q~XoFKH2-dRajJGgdSvj-6Ko48roAl7_qaUU --tenant ccb92876-d4ba-4bc7-b967-c9177170db6d'
-            }
-        }
 
         stage('Terraform Init & Apply') {
             steps {
                 dir('terraform') {
-                    withCredentials([azureServicePrincipal(
-                        credentialsId: AZURE_CREDENTIALS_ID,
-                        subscriptionIdVariable: 'ARM_SUBSCRIPTION_ID',
-                        clientIdVariable: 'ARM_CLIENT_ID',
-                        clientSecretVariable: 'ARM_CLIENT_SECRET',
-                        tenantIdVariable: 'ARM_TENANT_ID'
-                    )]) {
+                    withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
                         bat '''
                             set PATH=%AZURE_CLI_PATH%;%SYSTEM_PATH%;%TERRAFORM_PATH%;%PATH%
-                            set ARM_SUBSCRIPTION_ID=%ARM_SUBSCRIPTION_ID%
-                            set ARM_CLIENT_ID=%ARM_CLIENT_ID%
-                            set ARM_CLIENT_SECRET=%ARM_CLIENT_SECRET%
-                            set ARM_TENANT_ID=%ARM_TENANT_ID%
                             terraform init
                             terraform plan
                             terraform apply -auto-approve
@@ -55,6 +40,12 @@ pipeline {
             }
         }
 
+        stage('Build .NET App') {
+            steps {
+                bat 'dotnet publish WebApiJenkins/WebApiJenkins.csproj -c Release -o out'
+            }
+        }
+    
         stage('Build Docker Image') {
             steps {
                 bat '''
