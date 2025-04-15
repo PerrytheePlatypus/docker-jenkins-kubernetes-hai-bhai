@@ -15,6 +15,13 @@ pipeline {
 
     stages {
 
+        stage('Azure Login') {
+    steps {
+        bat 'az login --service-principal -u 548e5e7d-b2db-4ffd-822e-46a0a4191a11 -p SF18Q~XoFKH2-dRajJGgdSvj-6Ko48roAl7_qaUU --tenant ccb92876-d4ba-4bc7-b967-c9177170db6d'
+    }
+}
+
+
         stage('Terraform Init & Apply') {
             steps {
                 dir('terraform') {
