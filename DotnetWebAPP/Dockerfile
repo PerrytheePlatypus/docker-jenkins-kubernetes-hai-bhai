@@ -11,12 +11,12 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 # Copy ONLY the .csproj file from the project subdirectory
-COPY ["DotNetWebAPP/DotNetWebAPP.csproj", "DotNetWebAPP/"]
-RUN dotnet restore "DotNetWebAPP/DotNetWebAPP.csproj"
+COPY ["DotNetWebAPP.csproj", "./"]
+RUN dotnet restore "DotNetWebAPP.csproj"
 
 # Copy remaining files and build
 COPY . .
-WORKDIR "/src/DotNetWebAPP"
+WORKDIR "/src/."
 RUN dotnet build "DotNetWebAPP.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Stage 3: Publish
