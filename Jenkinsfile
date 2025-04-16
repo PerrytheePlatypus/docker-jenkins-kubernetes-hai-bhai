@@ -36,7 +36,7 @@ pipeline {
             steps {
                 withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
                     bat """
-                    echo "Navigating to Terraform Directory: %TF_WORKING_DIR%"
+                    az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
                     cd %TF_WORKING_DIR%
                     terraform init
                     """
