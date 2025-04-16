@@ -26,12 +26,6 @@ pipeline {
             }
         }
 
-        stage('Build .NET App') {
-            steps {
-                bat 'dotnet publish DotNetWebAPP\\DotNetWebAPP.csproj -c Release -o out'
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 bat "docker build -t %ACR_LOGIN_SERVER%/%IMAGE_NAME%:%IMAGE_TAG% -f DotNetWebAPP/Dockerfile DotNetWebAPP"
@@ -44,7 +38,6 @@ pipeline {
                     bat """
                     echo "Navigating to Terraform Directory: %TF_WORKING_DIR%"
                     cd %TF_WORKING_DIR%
-                    echo "Initializing Terraform..."
                     terraform init
                     """
                 }
@@ -55,9 +48,8 @@ pipeline {
             steps {
                 withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
                     bat """
-                    echo "Navigating to Terraform Directory: %TF_WORKING_DIR%"
                     cd %TF_WORKING_DIR%
-                    terraform plan -out=tfplan
+                    terraform plan
                     """
                 }
             }
@@ -68,10 +60,8 @@ pipeline {
     steps {
         withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
             bat """
-            echo "Navigating to Terraform Directory: %TF_WORKING_DIR%"
             cd %TF_WORKING_DIR%
-            echo "Applying Terraform Plan..."
-            terraform apply -auto-approve tfplan
+            terraform apply -auto-approve 
             """
         }
     }
